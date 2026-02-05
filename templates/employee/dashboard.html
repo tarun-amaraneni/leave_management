@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Duration Box */
+.duration-box {
+    margin-top: 15px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+    border: 1px solid #c8e6c9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.duration-label {
+    color: #2e7d32;
+    font-size: 14px;
+}
+
+.duration-value {
+    font-size: 20px;
+    color: #1b5e20;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Welcome Card -->
+<div class="welcome-card">
+    <h2>Welcome, {{ user.username }} 👋</h2>
+    <p>Submit leave requests, track approvals, and manage your leave calendar.</p>
+</div>
+
+<!-- Dashboard Cards -->
+<div class="dashboard-cards">
+    <div class="card">
+        <h3>Apply Leave</h3>
+        <p>Submit a new leave request</p>
+        <a href="#apply-leave">Apply</a>
+    </div>
+
+    <div class="card">
+        <h3>My Leaves</h3>
+        <p>View your applied leaves</p>
+        <a href="{% url 'my_leaves' %}">My Leaves</a>
+    </div>
+
+    <div class="card">
+        <h3>Leave Calendar</h3>
+        <p>Check upcoming leaves</p>
+        <a href="{% url 'leave_calendar' %}">Leave Calendar</a>
+    </div>
+</div>
+
+<!-- Apply Leave Form -->
+<div class="form-container" id="apply-leave">
+    <h3>Apply for Leave</h3>
+
+    <form method="POST" action="{% url 'leave_request' %}">
+        {% csrf_token %}
+
+        <label>Leave Type</label>
+        <select name="leave_type" required>
+            <option value="">Select Leave Type</option>
+            <option value="Vacation">Vacation</option>
+            <option value="Sick Leave">Sick Leave</option>
+            <option value="Work From Home">Work From Home</option>
+        </select>
+
+        <label>Start Date</label>
+        <input type="date" name="start_date" id="start_date" required>
+
+        <label>End Date</label>
+        <input type="date" name="end_date" id="end_date" required>
+
+        <!-- Duration Display -->
+        <div class="duration-box">
+            <span class="duration-label">Leave Duration (Excl. Sundays)</span>
+            <span class="duration-value">
+                <span id="duration">0</span> day(s)
+            </span>
+        </div>
+
+        <label>Reason</label>
+        <textarea name="reason" rows="4" placeholder="Enter reason for leave" required></textarea>
+        <label>Reason</label>
+        <textarea name="reason" rows="4" placeholder="Enter reason for leave" required></textarea>
+
+        {% if user.userprofile.manager %}
+        <div class="duration-box" style="margin-top:10px; background:#e3f2fd; border:1px solid #90caf9;">
+            <span class="duration-label">Manager</span>
+            <span class="duration-value">{{ user.userprofile.manager.username }}</span>
+        </div>
+        {% endif %}
+
+        <button type="submit">Submit Leave Request</button>
+
+        
+    </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const startDateInput = document.getElementById("start_date");
+const endDateInput = document.getElementById("end_date");
+const durationSpan = document.getElementById("duration");
+
+function calculateDuration() {
+    if (!startDateInput.value || !endDateInput.value) {
+        durationSpan.textContent = 0;
+        return;
+    }
+
+    const startDate = new Date(startDateInput.value);
+    const endDate = new Date(endDateInput.value);
+
+    // ❌ Invalid case: end < start
+    if (endDate < startDate) {
+        durationSpan.textContent = 0;
+        return;
+    }
+
+    let count = 0;
+    let current = new Date(startDate);
+
+    while (current <= endDate) {
+        // Exclude Sundays
+        if (current.getDay() !== 0) {
+            count++;
+        }
+        current.setDate(current.getDate() + 1);
+    }
+
+    durationSpan.textContent = count;
+}
+
+// ✅ When start date changes
+startDateInput.addEventListener("change", () => {
+    // Force end date to be >= start date
+    endDateInput.min = startDateInput.value;
+
+    // If already selected end date is invalid → reset it
+    if (endDateInput.value && endDateInput.value < startDateInput.value) {
+        endDateInput.value = "";
+        durationSpan.textContent = 0;
+    }
+
+    calculateDuration();
+});
+
+// ✅ When end date changes
+endDateInput.addEventListener("change", calculateDuration);
+</script>
+
+{% endblock %}

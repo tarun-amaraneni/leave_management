@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Leave Calendar{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Main heading */
+.main h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1f2a38;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Calendar container */
+.calendar-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+}
+
+/* Navigation buttons */
+.nav-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.nav-buttons a {
+    font-size: 14px;
+    padding: 6px 16px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    border: 1px solid #4CAF50;
+    color: #4CAF50;
+    font-weight: 500;
+}
+
+.nav-buttons a:hover {
+    background-color: #4CAF50;
+    color: #fff;
+}
+
+/* Legend */
+.legend {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.legend span {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+/* Legend colors */
+.legend .approved {
+    background-color: #28a745;
+}
+.legend .pending {
+    background-color: #ffc107;
+}
+.legend .rejected {
+    background-color: #dc3545;
+}
+
+/* Calendar table */
+.calendar {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-family: 'Roboto', sans-serif;
+}
+
+.calendar th,
+.calendar td {
+    border: 1px solid #dee2e6;
+    height: 100px;
+    vertical-align: top;
+    padding: 8px;
+    font-size: 14px;
+    text-align: left;
+}
+
+.calendar th {
+    background-color: #4CAF50;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+}
+
+/* Days not in current month */
+.other-month {
+    color: #adb5bd;
+    background-color: #f8f9fa;
+    text-align: center;
+}
+
+/* Leave badges */
+.leave {
+    display: inline-block;
+    padding: 3px 6px;
+    margin: 3px 2px 0 0;
+    border-radius: 6px;
+    font-size: 0.75em;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.leave:hover {
+    transform: scale(1.05);
+}
+
+/* Status colors */
+.leave.approved {
+    background-color: #28a745;
+}
+.leave.pending {
+    background-color: #ffc107;
+    color: #000;
+}
+.leave.rejected {
+    background-color: #dc3545;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .calendar th,
+    .calendar td {
+        font-size: 12px;
+        height: 80px;
+        padding: 5px;
+    }
+
+    .leave {
+        font-size: 0.65em;
+        padding: 2px 4px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="calendar-container">
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+        <a href="{% url 'leave_calendar' year=prev_year month=prev_month %}">
+            &laquo; Previous
+        </a>
+        <a href="{% url 'leave_calendar' year=next_year month=next_month %}">
+            Next &raquo;
+        </a>
+    </div>
+
+    <h2>Leave Calendar – {{ month }}/{{ year }}</h2>
+
+    <!-- Legend -->
+    <div class="legend">
+        <div><span class="approved"></span> Approved</div>
+        <div><span class="pending"></span> Pending</div>
+        <div><span class="rejected"></span> Rejected</div>
+    </div>
+
+    <!-- Calendar Table -->
+    <table class="calendar">
+        <thead>
+            <tr>
+                {% for day in weekdays %}
+                    <th>{{ day }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for week in calendar_data %}
+                <tr>
+                    {% for day in week %}
+                        {% if day.date.month != month %}
+                            <td class="other-month">
+                                {{ day.date.day }}
+                            </td>
+                        {% else %}
+                            <td>
+                                <strong>{{ day.date.day }}</strong><br>
+                                {% for leave in day.leaves %}
+                                    <span class="leave {{ leave.status|lower }}"
+                                          title="{{ leave.employee.username }} | {{ leave.leave_type }} | {{ leave.status }}">
+                                        {{ leave.employee.username }}
+                                    </span>
+                                {% endfor %}
+                            </td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+{% endblock %}

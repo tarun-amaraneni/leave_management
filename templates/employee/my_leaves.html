@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}My Leaves{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Page title */
+.page-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1f2a38;
+    margin-bottom: 20px;
+}
+
+/* Toolbar */
+.table-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.table-toolbar input,
+.table-toolbar select {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    min-width: 200px;
+}
+
+.table-toolbar input:focus,
+.table-toolbar select:focus {
+    outline: none;
+    border-color: #4CAF50;
+}
+
+/* Table wrapper */
+.table-wrapper {
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+/* Table */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+
+/* Sticky header */
+.data-table thead th {
+    position: sticky;
+    top: 0;
+    background: #1f2a38;
+    color: #fff;
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 13px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Sort indicator */
+.data-table thead th:hover {
+    background: #263445;
+}
+
+/* Rows */
+.data-table td {
+    padding: 12px 16px;
+    font-size: 14px;
+    color: #444;
+    border-bottom: 1px solid #eee;
+}
+
+/* Hover */
+.data-table tbody tr:hover {
+    background: #f1f7ff;
+}
+
+/* Status badges */
+.status {
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+}
+.status.PENDING { background: #ffc107; }
+.status.APPROVED { background: #28a745; }
+.status.REJECTED { background: #dc3545; }
+
+/* Empty state */
+.empty {
+    padding: 30px;
+    text-align: center;
+    font-size: 16px;
+    color: #666;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .table-wrapper {
+        overflow-x: auto;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-title">My Leave Requests</div>
+
+<div class="table-toolbar">
+    <input type="text" id="searchInput" placeholder="🔍 Search anything...">
+    
+    <select id="typeFilter">
+        <option value="">All Leave Types</option>
+        <option value="Vacation">Vacation</option>
+        <option value="Sick Leave">Sick Leave</option>
+        <option value="Work From Home">Work From Home</option>
+    </select>
+
+    <select id="statusFilter">
+        <option value="">All Status</option>
+        <option value="PENDING">Pending</option>
+        <option value="APPROVED">Approved</option>
+        <option value="REJECTED">Rejected</option>
+    </select>
+</div>
+
+{% if leaves %}
+<div class="table-wrapper">
+    <table class="data-table" id="leaveTable">
+        <thead>
+            <tr>
+                <th onclick="sortTable(0)">#</th>
+                <th onclick="sortTable(1)">Leave Type</th>
+                <th onclick="sortTable(2)">Start</th>
+                <th onclick="sortTable(3)">End</th>
+                <th>Reason</th>
+                <th onclick="sortTable(5)">Status</th>
+                <th onclick="sortTable(6)">Submitted</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for leave in leaves %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ leave.leave_type }}</td>
+                <td>{{ leave.start_date }}</td>
+                <td>{{ leave.end_date }}</td>
+                <td>{{ leave.reason|truncatechars:40 }}</td>
+                <td><span class="status {{ leave.status }}">{{ leave.status }}</span></td>
+                <td>{{ leave.submitted_at|date:"d M Y H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty">You have not applied for any leaves yet.</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const searchInput = document.getElementById("searchInput");
+const typeFilter = document.getElementById("typeFilter");
+const statusFilter = document.getElementById("statusFilter");
+const table = document.getElementById("leaveTable");
+const rows = table ? table.tBodies[0].rows : [];
+
+function filterTable() {
+    const search = searchInput.value.toLowerCase();
+    const type = typeFilter.value;
+    const status = statusFilter.value;
+
+    for (let row of rows) {
+        const text = row.innerText.toLowerCase();
+        const rowType = row.cells[1].innerText;
+        const rowStatus = row.cells[5].innerText;
+
+        row.style.display =
+            (!search || text.includes(search)) &&
+            (!type || rowType === type) &&
+            (!status || rowStatus === status)
+            ? "" : "none";
+    }
+}
+
+searchInput.addEventListener("keyup", filterTable);
+typeFilter.addEventListener("change", filterTable);
+statusFilter.addEventListener("change", filterTable);
+
+/* Sorting */
+let sortDir = true;
+function sortTable(col) {
+    const tbody = table.tBodies[0];
+    const rowsArr = Array.from(tbody.rows);
+
+    rowsArr.sort((a, b) => {
+        let A = a.cells[col].innerText.toLowerCase();
+        let B = b.cells[col].innerText.toLowerCase();
+        return sortDir ? A.localeCompare(B) : B.localeCompare(A);
+    });
+
+    sortDir = !sortDir;
+    rowsArr.forEach(r => tbody.appendChild(r));
+}
+</script>
+{% endblock %}
