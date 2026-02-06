@@ -22,5 +22,27 @@ urlpatterns = [
     path('manager/leave/<int:leave_id>/<str:action>/', views.leave_action, name='leave_action'),
     path('view-members/', views.view_members, name='view_members'),
 
+   # Current month by default
+    path('manager_leave_calendar/', views.manager_leave_calendar, name='manager_leave_calendar'),
+
+    # Specific year/month
+    path('manager_leave_calendar/<int:year>/<int:month>/', views.manager_leave_calendar, name='manager_leave_calendar'),
+
+
+    path(
+    "manager/leave-day-details/",
+    views.manager_leave_day_details,
+    name="manager_leave_day_details"
+),
+
+
+
+# urls.py
+    path(
+    "manager/leave-action/",
+    views.leave_action_with_comment,
+    name="leave_action_with_comment"
+),
+
     
 ]

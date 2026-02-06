@@ -3,8 +3,8 @@ from django.contrib.auth import login, authenticate
 from .models import UserProfile
 from django.shortcuts import render, redirect
 from django.views.decorators.cache import never_cache
-
-
+from django.conf import settings
+import os
 def login_view(request):
     if request.method == 'POST':
         username = request.POST['username']
@@ -36,7 +36,10 @@ from collections import defaultdict
 from datetime import timedelta
 from .models import LeaveRequest
 
-TOTAL_ENTITLEMENT = 12
+TOTAL_ENTITLEMENT = int(os.environ.get("TOTAL_ENTITLEMENT", 12))
+
+
+
 
 def calculate_leave_days(start_date, end_date):
     """Count leave days excluding Sundays"""
@@ -89,7 +92,8 @@ from collections import defaultdict
 from datetime import timedelta
 from .models import LeaveRequest
 
-TOTAL_ENTITLEMENT = 12
+TOTAL_ENTITLEMENT = settings.TOTAL_ENTITLEMENT
+
 
 def calculate_leave_days(start_date, end_date):
     """Count leave days excluding Sundays"""
@@ -145,7 +149,8 @@ from django.contrib import messages
 from django.views.decorators.cache import never_cache
 from .models import LeaveRequest, UserProfile
 
-TOTAL_ENTITLEMENT = 12
+TOTAL_ENTITLEMENT = settings.TOTAL_ENTITLEMENT
+
 
 
 def calculate_leave_days(start_date, end_date):
@@ -336,7 +341,8 @@ from django.views.decorators.cache import never_cache
 from django.shortcuts import render
 from .models import LeaveRequest
 
-TOTAL_ENTITLEMENT = 12
+TOTAL_ENTITLEMENT = settings.TOTAL_ENTITLEMENT
+
 
 
 def calculate_leave_days(start_date, end_date):
@@ -422,8 +428,8 @@ from django.db.models import Q
 @login_required
 def manager_leave_list(request):
     profile = request.user.userprofile
-    if profile.role != 'MANAGER':
-        return render(request, '403.html')
+    # if profile.role != 'MANAGER':
+    #     return render(request, '403.html')
 
     # Get filters from request
     search = request.GET.get('search', '').strip()
@@ -517,3 +523,169 @@ def view_members(request):
         'members': members
     }
     return render(request, 'manager/view_members.html', context)
+
+
+
+from datetime import date, timedelta
+import calendar
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import never_cache
+from django.db.models import Q, Count
+from .models import LeaveRequest, UserProfile
+from django.contrib.auth.models import User
+
+from datetime import date, timedelta
+import calendar
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import never_cache
+from django.db.models import Q
+from django.contrib.auth.models import User
+from .models import LeaveRequest
+
+@never_cache
+@login_required
+def manager_leave_calendar(request, year=None, month=None):
+    today = date.today()
+    year = int(year) if year else today.year
+    month = int(month) if month else today.month
+
+    # First and last day of the month
+    first_day = date(year, month, 1)
+    last_day = date(year, month, calendar.monthrange(year, month)[1])
+
+    # Employees under current manager
+    employees = User.objects.filter(userprofile__manager=request.user)
+
+    # Leaves for these employees overlapping this month (ignore rejected)
+    leaves = LeaveRequest.objects.filter(
+        Q(start_date__lte=last_day) & Q(end_date__gte=first_day),
+        employee__in=employees
+    ).exclude(status__iexact='REJECTED')  # ignore rejected leaves
+
+    # Map each date -> approved/pending counts
+    leave_dict = {}
+    for leave in leaves:
+        current = leave.start_date
+        while current <= leave.end_date:
+            if first_day <= current <= last_day:
+                day_counts = leave_dict.setdefault(current, {'approved': 0, 'pending': 0})
+                status = leave.status.upper()
+                if status == 'APPROVED':
+                    day_counts['approved'] += 1
+                elif status == 'PENDING':
+                    day_counts['pending'] += 1
+            current += timedelta(days=1)
+
+    # Prepare calendar
+    cal = calendar.Calendar(firstweekday=0)
+    month_days = list(cal.itermonthdates(year, month))
+    weeks = [month_days[i:i+7] for i in range(0, len(month_days), 7)]
+
+    calendar_data = []
+    for week in weeks:
+        week_data = []
+        for day in week:
+            counts = leave_dict.get(day, {'approved': 0, 'pending': 0})
+            week_data.append({
+                'date': day,
+                'approved_count': counts['approved'],
+                'pending_count': counts['pending'],
+            })
+        calendar_data.append(week_data)
+
+    # Previous/Next month
+    prev_month = month - 1 if month > 1 else 12
+    prev_year = year if month > 1 else year - 1
+    next_month = month + 1 if month < 12 else 1
+    next_year = year if month < 12 else year + 1
+
+    context = {
+        'year': year,
+        'month': month,
+        'calendar_data': calendar_data,
+        'weekdays': ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        'prev_month': prev_month,
+        'prev_year': prev_year,
+        'next_month': next_month,
+        'next_year': next_year,
+    }
+
+    return render(request, 'manager/manager_leave_calendar.html', context)
+
+
+from datetime import datetime
+from datetime import datetime
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import never_cache
+from django.db.models import Q
+from django.contrib.auth.models import User
+from .models import LeaveRequest
+
+
+@never_cache
+@login_required
+def manager_leave_day_details(request):
+    date_str = request.GET.get("date")
+    status = request.GET.get("status")
+
+    if not date_str or not status:
+        return JsonResponse({"data": []})
+
+    selected_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+    # employees under this manager
+    employees = User.objects.filter(userprofile__manager=request.user)
+
+    leaves = LeaveRequest.objects.filter(
+        employee__in=employees,
+        status=status,
+        start_date__lte=selected_date,
+        end_date__gte=selected_date,
+    )
+
+    data = []
+    for leave in leaves:
+        data.append({
+            "name": leave.employee.get_full_name() or leave.employee.username,
+            "from": leave.start_date.strftime("%d-%m-%Y"),
+            "to": leave.end_date.strftime("%d-%m-%Y"),
+            "reason": leave.reason,
+        })
+
+    return JsonResponse({"data": data})
+
+
+
+
+
+
+from django.shortcuts import get_object_or_404, redirect
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from .models import LeaveRequest
+
+@login_required
+@require_POST
+def leave_action_with_comment(request):
+    leave_id = request.POST.get("leave_id")
+    action = request.POST.get("action")
+    comment = request.POST.get("comment")
+
+    leave = get_object_or_404(
+        LeaveRequest,
+        id=leave_id,
+        manager=request.user
+    )
+
+    if action == "approve":
+        leave.status = "APPROVED"
+    elif action == "reject":
+        leave.status = "REJECTED"
+
+    leave.comment_by_manager = comment
+    leave.save()
+
+    return redirect("manager_leave_list")  # adjust URL name if needed

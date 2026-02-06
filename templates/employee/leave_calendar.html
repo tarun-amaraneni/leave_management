@@ -4,158 +4,189 @@
 
 {% block extra_css %}
 <style>
-/* Main heading */
+/* ===== Page Heading ===== */
 .main h2 {
-    font-size: 28px;
+    font-size: 30px;
     font-weight: 700;
-    color: #1f2a38;
-    margin-bottom: 20px;
+    color: #1f2937;
+    margin-bottom: 22px;
     text-align: center;
 }
 
-/* Calendar container */
+/* ===== Calendar Card ===== */
 .calendar-container {
-    max-width: 1000px;
+    max-width: 1050px;
     margin: 0 auto;
-    padding: 20px;
-    background: #fff;
-    border-radius: 15px;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+    padding: 26px;
+    background: linear-gradient(180deg, #ffffff, #f9fafb);
+    border-radius: 18px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.08);
 }
 
-/* Navigation buttons */
+/* ===== Navigation ===== */
 .nav-buttons {
     display: flex;
     justify-content: center;
-    gap: 12px;
-    margin-bottom: 15px;
+    gap: 14px;
+    margin-bottom: 14px;
 }
 
 .nav-buttons a {
     font-size: 14px;
-    padding: 6px 16px;
-    border-radius: 6px;
-    transition: all 0.2s ease;
+    padding: 8px 20px;
+    border-radius: 999px;
     text-decoration: none;
     border: 1px solid #4CAF50;
     color: #4CAF50;
-    font-weight: 500;
+    font-weight: 600;
+    transition: all 0.25s ease;
+    background: #fff;
 }
 
 .nav-buttons a:hover {
     background-color: #4CAF50;
     color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 15px rgba(76,175,80,0.3);
 }
 
-/* Legend */
+/* ===== Month Title ===== */
+.calendar-container h2 {
+    text-align: center;
+    margin: 10px 0 18px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+}
+
+/* ===== Legend ===== */
 .legend {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 18px;
-    margin-bottom: 20px;
+    gap: 22px;
+    margin-bottom: 22px;
     font-size: 14px;
     font-weight: 500;
 }
 
+.legend div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .legend span {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border-radius: 4px;
-    margin-right: 6px;
-    vertical-align: middle;
 }
 
-/* Legend colors */
-.legend .approved {
-    background-color: #28a745;
-}
-.legend .pending {
-    background-color: #ffc107;
-}
-.legend .rejected {
-    background-color: #dc3545;
-}
+.legend .approved { background: #22c55e; }
+.legend .pending { background: #facc15; }
+.legend .rejected { background: #ef4444; }
 
-/* Calendar table */
+/* ===== Calendar Table ===== */
 .calendar {
-    table-layout: fixed;
     width: 100%;
+    table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
-    font-family: 'Roboto', sans-serif;
-}
-
-.calendar th,
-.calendar td {
-    border: 1px solid #dee2e6;
-    height: 100px;
-    vertical-align: top;
-    padding: 8px;
-    font-size: 14px;
-    text-align: left;
+    overflow: hidden;
+    border-radius: 14px;
 }
 
 .calendar th {
-    background-color: #4CAF50;
-    color: white;
+    background: linear-gradient(135deg, #4CAF50, #43a047);
+    color: #fff;
+    font-size: 13px;
+    letter-spacing: 0.8px;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    padding: 14px 6px;
     text-align: center;
 }
 
-/* Days not in current month */
+.calendar td {
+    border: 1px solid #e5e7eb;
+    height: 110px;
+    padding: 8px;
+    vertical-align: top;
+    background: #fff;
+    transition: background 0.2s ease;
+}
+
+.calendar td:hover {
+    background: #f9fafb;
+}
+
+/* ===== Other Month ===== */
 .other-month {
-    color: #adb5bd;
-    background-color: #f8f9fa;
+    background: #f3f4f6;
+    color: #9ca3af;
     text-align: center;
+    font-weight: 500;
 }
 
-/* Leave badges */
+/* ===== Day Number ===== */
+.calendar td strong {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 700;
+    color: #374151;
+    margin-bottom: 4px;
+}
+
+/* ===== Leave Badges ===== */
 .leave {
     display: inline-block;
-    padding: 3px 6px;
-    margin: 3px 2px 0 0;
-    border-radius: 6px;
-    font-size: 0.75em;
+    margin-top: 4px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 11px;
     font-weight: 600;
-    color: white;
+    line-height: 1;
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     white-space: nowrap;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .leave:hover {
-    transform: scale(1.05);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.12);
 }
 
-/* Status colors */
+/* Status Colors */
 .leave.approved {
-    background-color: #28a745;
+    background: #22c55e;
+    color: #fff;
 }
 .leave.pending {
-    background-color: #ffc107;
-    color: #000;
+    background: #facc15;
+    color: #111827;
 }
 .leave.rejected {
-    background-color: #dc3545;
+    background: #ef4444;
+    color: #fff;
 }
 
-/* Responsive adjustments */
+/* ===== Responsive ===== */
 @media (max-width: 768px) {
-    .calendar th,
     .calendar td {
-        font-size: 12px;
-        height: 80px;
-        padding: 5px;
+        height: 85px;
+        padding: 6px;
+    }
+
+    .calendar th {
+        font-size: 11px;
+        padding: 10px 4px;
     }
 
     .leave {
-        font-size: 0.65em;
-        padding: 2px 4px;
+        font-size: 10px;
+        padding: 3px 6px;
     }
 }
 </style>
@@ -183,7 +214,7 @@
         <div><span class="rejected"></span> Rejected</div>
     </div>
 
-    <!-- Calendar Table -->
+    <!-- Calendar -->
     <table class="calendar">
         <thead>
             <tr>
@@ -194,25 +225,23 @@
         </thead>
         <tbody>
             {% for week in calendar_data %}
-                <tr>
-                    {% for day in week %}
-                        {% if day.date.month != month %}
-                            <td class="other-month">
-                                {{ day.date.day }}
-                            </td>
-                        {% else %}
-                            <td>
-                                <strong>{{ day.date.day }}</strong><br>
-                                {% for leave in day.leaves %}
-                                    <span class="leave {{ leave.status|lower }}"
-                                          title="{{ leave.employee.username }} | {{ leave.leave_type }} | {{ leave.status }}">
-                                        {{ leave.employee.username }}
-                                    </span>
-                                {% endfor %}
-                            </td>
-                        {% endif %}
-                    {% endfor %}
-                </tr>
+            <tr>
+                {% for day in week %}
+                    {% if day.date.month != month %}
+                        <td class="other-month">{{ day.date.day }}</td>
+                    {% else %}
+                        <td>
+                            <strong>{{ day.date.day }}</strong><br>
+                            {% for leave in day.leaves %}
+                                <span class="leave {{ leave.status|lower }}"
+                                      title="{{ leave.employee.username }} | {{ leave.leave_type }} | {{ leave.status }}">
+                                    {{ leave.employee.username }}
+                                </span>
+                            {% endfor %}
+                        </td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
             {% endfor %}
         </tbody>
     </table>

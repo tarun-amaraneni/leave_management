@@ -47,7 +47,7 @@
 .data-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 900px;
+    min-width: 1000px;
 }
 
 /* Sticky header */
@@ -64,7 +64,6 @@
     user-select: none;
 }
 
-/* Sort indicator */
 .data-table thead th:hover {
     background: #263445;
 }
@@ -91,9 +90,24 @@
     color: #fff;
     text-transform: uppercase;
 }
-.status.PENDING { background: #ffc107; }
+.status.PENDING { background: #ffc107; color:#000; }
 .status.APPROVED { background: #28a745; }
 .status.REJECTED { background: #dc3545; }
+
+/* Manager comment */
+.manager-comment {
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #374151;
+    font-size: 13px;
+}
+
+.manager-comment.empty {
+    color: #9ca3af;
+    font-style: italic;
+}
 
 /* Empty state */
 .empty {
@@ -118,7 +132,7 @@
 
 <div class="table-toolbar">
     <input type="text" id="searchInput" placeholder="🔍 Search anything...">
-    
+
     <select id="typeFilter">
         <option value="">All Leave Types</option>
         <option value="Vacation">Vacation</option>
@@ -144,8 +158,9 @@
                 <th onclick="sortTable(2)">Start</th>
                 <th onclick="sortTable(3)">End</th>
                 <th>Reason</th>
-                <th onclick="sortTable(5)">Status</th>
-                <th onclick="sortTable(6)">Submitted</th>
+                <th>Manager Comment</th>
+                <th onclick="sortTable(6)">Status</th>
+                <th onclick="sortTable(7)">Submitted</th>
             </tr>
         </thead>
         <tbody>
@@ -156,7 +171,24 @@
                 <td>{{ leave.start_date }}</td>
                 <td>{{ leave.end_date }}</td>
                 <td>{{ leave.reason|truncatechars:40 }}</td>
-                <td><span class="status {{ leave.status }}">{{ leave.status }}</span></td>
+
+                <td>
+                    {% if leave.comment_by_manager %}
+                        <span class="manager-comment"
+                              title="{{ leave.comment_by_manager }}">
+                            {{ leave.comment_by_manager|truncatechars:30 }}
+                        </span>
+                    {% else %}
+                        <span class="manager-comment empty">—</span>
+                    {% endif %}
+                </td>
+
+                <td>
+                    <span class="status {{ leave.status }}">
+                        {{ leave.status }}
+                    </span>
+                </td>
+
                 <td>{{ leave.submitted_at|date:"d M Y H:i" }}</td>
             </tr>
             {% endfor %}
@@ -185,7 +217,7 @@ function filterTable() {
     for (let row of rows) {
         const text = row.innerText.toLowerCase();
         const rowType = row.cells[1].innerText;
-        const rowStatus = row.cells[5].innerText;
+        const rowStatus = row.cells[6].innerText;
 
         row.style.display =
             (!search || text.includes(search)) &&

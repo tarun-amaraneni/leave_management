@@ -48,6 +48,10 @@ class LeaveRequest(models.Model):
     reason = models.TextField()
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
     submitted_at = models.DateTimeField(auto_now_add=True)
+    comment_by_manager = models.TextField(
+        null=True,
+        blank=True
+    )
 
     def __str__(self):
         return f"{self.employee.username} - {self.leave_type} ({self.status})"

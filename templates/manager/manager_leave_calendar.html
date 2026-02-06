@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block title %}Manager Leave Calendar{% endblock %}
+
+{% block content %}
+<style>
+/* Page wrapper */
+.calendar-wrapper {
+    max-width: 1100px;
+    margin: 30px auto;
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 18px;
+    box-shadow: 0 20px 45px rgba(0,0,0,0.08);
+}
+
+/* Header */
+.calendar-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.calendar-header h2 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+/* Navigation */
+.calendar-nav {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+.calendar-nav a {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1px solid #4CAF50;
+    text-decoration: none;
+    font-weight: 500;
+    color: #4CAF50;
+    transition: all .2s ease;
+}
+.calendar-nav a:hover {
+    background: #4CAF50;
+    color: #fff;
+}
+
+/* Legend */
+.legend {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+.legend span {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    margin-right: 6px;
+}
+.legend .approved { background:#22c55e; }
+.legend .pending { background:#facc15; }
+
+/* Calendar table */
+.calendar {
+    width:100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border-radius: 14px;
+}
+.calendar th {
+    background:#4CAF50;
+    color:#fff;
+    padding: 12px;
+    text-align:center;
+    font-weight: 600;
+}
+.calendar td {
+    border:1px solid #e5e7eb;
+    height:100px;
+    padding:8px;
+    vertical-align:top;
+    transition: background .2s ease;
+}
+.calendar td:hover {
+    background:#f9fafb;
+}
+.other-month {
+    background:#f3f4f6;
+    color:#9ca3af;
+    text-align:center;
+}
+
+/* Day number */
+.day-number {
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: block;
+}
+
+/* Leave badges */
+.leave-count {
+    display:inline-block;
+    margin-top:6px;
+    padding:6px 10px;
+    font-size:12px;
+    border-radius:999px;
+    cursor:pointer;
+    font-weight:600;
+}
+.leave-count.approved {
+    background:#dcfce7;
+    color:#166534;
+}
+.leave-count.pending {
+    background:#fef9c3;
+    color:#854d0e;
+}
+
+/* Modal */
+.modal {
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+}
+.modal-content {
+    background:#fff;
+    width:70%;
+    margin:6% auto;
+    padding:25px;
+    border-radius:16px;
+    animation: slideUp .25s ease;
+}
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity:0; }
+    to { transform: translateY(0); opacity:1; }
+}
+.close {
+    float:right;
+    font-size:24px;
+    cursor:pointer;
+    color:#6b7280;
+}
+.close:hover { color:#111827; }
+
+/* Modal table */
+.modal table {
+    width:100%;
+    border-collapse: collapse;
+    margin-top:15px;
+}
+.modal th {
+    background:#111827;
+    color:#fff;
+    padding:10px;
+}
+.modal td {
+    padding:10px;
+    border-bottom:1px solid #e5e7eb;
+}
+</style>
+
+<div class="calendar-wrapper">
+
+    <div class="calendar-header">
+        <h2>Employee Leave Calendar – {{ month }}/{{ year }}</h2>
+    </div>
+
+    <div class="calendar-nav">
+        <a href="{% url 'manager_leave_calendar' year=prev_year month=prev_month %}">⬅ Previous</a>
+        <a href="{% url 'manager_leave_calendar' year=next_year month=next_month %}">Next ➡</a>
+    </div>
+
+    <div class="legend">
+        <div><span class="approved"></span> On Leave</div>
+        <div><span class="pending"></span> Pending</div>
+    </div>
+
+    <table class="calendar">
+        <thead>
+            <tr>
+                {% for d in weekdays %}<th>{{ d }}</th>{% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for week in calendar_data %}
+            <tr>
+            {% for day in week %}
+                {% if day.date.month != month %}
+                    <td class="other-month">{{ day.date.day }}</td>
+                {% else %}
+                    <td>
+                        <span class="day-number">{{ day.date.day }}</span>
+
+                        {% if day.approved_count %}
+                        <span class="leave-count approved"
+                              data-date="{{ day.date|date:'Y-m-d' }}"
+                              data-status="APPROVED">
+                            {{ day.approved_count }} on leave
+                        </span><br>
+                        {% endif %}
+
+                        {% if day.pending_count %}
+                        <span class="leave-count pending"
+                              data-date="{{ day.date|date:'Y-m-d' }}"
+                              data-status="PENDING">
+                            {{ day.pending_count }} pending
+                        </span>
+                        {% endif %}
+                    </td>
+                {% endif %}
+            {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- MODAL -->
+<div id="leaveModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h3 id="modalTitle"></h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody id="modalBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+document.querySelectorAll(".leave-count").forEach(el => {
+    el.onclick = () => {
+        fetch("{% url 'manager_leave_day_details' %}?date=" +
+              el.dataset.date + "&status=" + el.dataset.status)
+        .then(r => r.json())
+        .then(res => {
+            const body = document.getElementById("modalBody");
+            body.innerHTML = "";
+            document.getElementById("modalTitle").innerText =
+                `${el.dataset.status} leaves on ${el.dataset.date}`;
+
+            if (!res.data.length) {
+                body.innerHTML =
+                    `<tr><td colspan="4" style="text-align:center;">No records</td></tr>`;
+            }
+
+            res.data.forEach(r => {
+                body.innerHTML += `
+                    <tr>
+                        <td>${r.name}</td>
+                        <td>${r.from}</td>
+                        <td>${r.to}</td>
+                        <td>${r.reason}</td>
+                    </tr>`;
+            });
+
+            document.getElementById("leaveModal").style.display = "block";
+        });
+    };
+});
+
+document.querySelector(".close").onclick = () =>
+    document.getElementById("leaveModal").style.display = "none";
+
+window.onclick = e => {
+    if (e.target.id === "leaveModal") e.target.style.display = "none";
+};
+});
+</script>
+{% endblock %}

@@ -10,18 +10,34 @@
     font-weight: 700;
 }
 
-.member-list {
-    list-style: none;
-    padding: 0;
-}
-
-.member-list li {
-    padding: 12px 15px;
-    margin-bottom: 10px;
+.team-table {
+    width: 100%;
+    border-collapse: collapse;
     background: #ffffff;
     border-radius: 8px;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.05);
-    font-weight: 500;
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+}
+
+.team-table th,
+.team-table td {
+    padding: 12px 15px;
+    text-align: left;
+}
+
+.team-table th {
+    background: #1f2a38;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.team-table tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.team-table td {
+    font-size: 14px;
     color: #1f2a38;
 }
 </style>
@@ -30,11 +46,32 @@
 {% block content %}
 <h2 class="page-title">My Team Members</h2>
 
-<ul class="member-list">
-    {% for member in members %}
-        <li>{{ member.user.get_full_name|default:member.user.username }}</li>
-    {% empty %}
-        <li>No employees assigned to you.</li>
-    {% endfor %}
-</ul>
+<table class="team-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for member in members %}
+        <tr>
+            <td>{{ member.user.id|default:"None" }}</td>
+
+            <td>
+                {{ member.user.get_full_name|default:member.user.username|default:"None" }}
+            </td>
+
+            <td>{{ member.user.email|default:"None" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3" style="text-align:center; padding: 15px;">
+                No employees assigned to you.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock %}

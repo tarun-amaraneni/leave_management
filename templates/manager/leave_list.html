@@ -6,6 +6,28 @@
 <style>
     .container { padding: 30px; }
     h2 { margin-bottom: 20px; }
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #fff;
+    width: 40%;
+    margin: 10% auto;
+    padding: 22px;
+    border-radius: 14px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+}
+
+.close {
+    float: right;
+    font-size: 22px;
+    cursor: pointer;
+}
 
     /* Filters */
     .filters {
@@ -88,6 +110,61 @@
     .approve:hover { background: #059669; }
     .reject:hover { background: #dc2626; }
     .back { display:inline-block; text-decoration:none; color:#2563eb; font-weight:500; margin-bottom:20px; }
+
+
+
+    /* Action Buttons */
+.actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.actions button {
+    border: none;
+    padding: 7px 16px;
+    border-radius: 999px; /* pill shape */
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+/* Approve */
+.actions .approve {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+}
+
+.actions .approve:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(16, 185, 129, 0.45);
+}
+
+/* Reject */
+.actions .reject {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+}
+
+.actions .reject:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(239, 68, 68, 0.45);
+}
+
+/* Disabled / completed state */
+.actions .done {
+    background: #e5e7eb;
+    color: #6b7280;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
 </style>
 
 <div class="container">
@@ -157,22 +234,56 @@
                 <td>{{ leave.reason }}</td>
                 <td class="actions">
                     {% if leave.status == 'PENDING' %}
-                        <a href="{% url 'leave_action' leave.id 'approve' %}" class="approve">Approve</a>
-                        <a href="{% url 'leave_action' leave.id 'reject' %}" class="reject">Reject</a>
+                        <button class="approve"
+                                data-id="{{ leave.id }}"
+                                data-action="approve">
+                            Approve
+                        </button>
+                        <button class="reject"
+                                data-id="{{ leave.id }}"
+                                data-action="reject">
+                            Reject
+                        </button>
                     {% else %}
                         —
                     {% endif %}
                 </td>
+
             </tr>
         {% empty %}
-            <tr>
-                <td colspan="7" style="text-align:center; padding:20px;">
-                    No leave requests found
-                </td>
-            </tr>
+
         {% endfor %}
         </tbody>
     </table>
+
+    <!-- COMMENT MODAL -->
+<div id="commentModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+
+        <h3 id="modalTitle"></h3>
+
+        <form method="POST" action="{% url 'leave_action_with_comment' %}">
+            {% csrf_token %}
+            <input type="hidden" name="leave_id" id="leaveId">
+            <input type="hidden" name="action" id="leaveAction">
+
+            <label style="font-weight:600;">Manager Comment(optional)</label>
+            <textarea name="comment"
+                      required
+                      rows="4"
+                      style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:1px solid #ccc;"></textarea>
+
+            <div style="margin-top:15px;text-align:right;">
+                <button type="submit"
+                        style="background:#2563eb;color:#fff;padding:8px 16px;border:none;border-radius:6px;">
+                    Submit
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 </div>
 
 <!-- 🔥 Frontend Filtering Script -->
@@ -251,6 +362,34 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial filter on page load
     filterTable();
 });
+
+
+
+</script>
+<script>
+document.querySelectorAll(".approve, .reject").forEach(btn => {
+    btn.addEventListener("click", function () {
+        document.getElementById("leaveId").value = this.dataset.id;
+        document.getElementById("leaveAction").value = this.dataset.action;
+
+        document.getElementById("modalTitle").innerText =
+            this.dataset.action === "approve"
+            ? "Approve Leave"
+            : "Reject Leave";
+
+        document.getElementById("commentModal").style.display = "block";
+    });
+});
+
+document.querySelector(".close").onclick = () => {
+    document.getElementById("commentModal").style.display = "none";
+};
+
+window.onclick = e => {
+    if (e.target.id === "commentModal") {
+        document.getElementById("commentModal").style.display = "none";
+    }
+};
 </script>
 
 {% endblock %}
