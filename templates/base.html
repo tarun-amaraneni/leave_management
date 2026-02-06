@@ -190,21 +190,27 @@
 <div class="sidebar">
     <h2>Leave System</h2>
 
-    
+    <!-- Employee Links -->
+    <div class="sidebar-section employee-links">
         <a href="{% url 'employee_dashboard' %}">Apply Leave</a>
         <a href="{% url 'my_leaves' %}">My Leaves</a>
-        <a href="{% url 'leave_calendar' %}">Leave Calendar</a>
         <a href="{% url 'entitlements' %}">Entitlements</a>
-    
+    </div>
 
+    <!-- Manager Links -->
     {% if user.userprofile.role == 'MANAGER' %}
-     
-        <a href="{% url 'manager_leave_list' %}">
-            Manage Employee Leaves
-        </a>
+    <div class="sidebar-section manager-links" style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;">
+        <h4 style="margin-bottom: 10px; color: #ffffff;">Manager</h4>
+        <a href="{% url 'view_members' %}">View Members</a>
+        <a href="{% url 'manager_leave_list' %}">Manage Employee Leaves</a>
+        
+    </div>
     {% endif %}
 
-    <a href="{% url 'logout' %}">Logout</a>
+    <!-- Logout -->
+    <div class="sidebar-section" style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px;">
+        <a href="{% url 'logout' %}">Logout</a>
+    </div>
 </div>
 
     <!-- Main Content -->

@@ -27,6 +27,111 @@
     font-size: 20px;
     color: #1b5e20;
 }
+
+/* Dashboard layout */
+.dashboard-wrapper {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+/* Form container */
+.form-container {
+    flex: 1 1 400px;
+    min-width: 300px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+/* Entitlements Cards */
+.entitlements {
+    flex: 1 1 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Entitlement card */
+.entitlement-card {
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+/* Header */
+.entitlement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+/* Badges */
+.badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge.success {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.badge.warning {
+    background: #fff8e1;
+    color: #f57f17;
+}
+
+.badge.danger {
+    background: #fdecea;
+    color: #c62828;
+}
+
+/* Stats */
+.entitlement-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.stat {
+    text-align: center;
+    flex: 1;
+}
+
+.stat .label {
+    font-size: 13px;
+    color: #6c757d;
+}
+
+.stat .value {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.stat.highlight .value {
+    color: #1b5e20;
+}
+
+/* Progress bar */
+.progress-bar {
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50, #81c784);
+    width: 0;
+    transition: width 0.4s ease;
+}
 </style>
 {% endblock %}
 
@@ -38,72 +143,86 @@
     <p>Submit leave requests, track approvals, and manage your leave calendar.</p>
 </div>
 
-<!-- Dashboard Cards -->
-<div class="dashboard-cards">
-    <div class="card">
-        <h3>Apply Leave</h3>
-        <p>Submit a new leave request</p>
-        <a href="#apply-leave">Apply</a>
+<!-- Main dashboard wrapper -->
+<div class="dashboard-wrapper">
+
+    <!-- Apply Leave Form -->
+    <div class="form-container" id="apply-leave">
+        <h3>Apply for Leave</h3>
+        <form method="POST" action="{% url 'leave_request' %}">
+            {% csrf_token %}
+            <label>Leave Type</label>
+            <select name="leave_type" required>
+                <option value="">Select Leave Type</option>
+                <option value="Vacation">Vacation</option>
+                <option value="Sick Leave">Sick Leave</option>
+                <option value="Work From Home">Work From Home</option>
+            </select>
+
+            <label>Start Date</label>
+            <input type="date" name="start_date" id="start_date" required>
+
+            <label>End Date</label>
+            <input type="date" name="end_date" id="end_date" required>
+
+            <div class="duration-box">
+                <span class="duration-label">Leave Duration (Excl. Sundays)</span>
+                <span class="duration-value"><span id="duration">0</span> day(s)</span>
+            </div>
+
+            <label>Reason</label>
+            <textarea name="reason" rows="4" placeholder="Enter reason for leave" required></textarea>
+
+            {% if user.userprofile.manager %}
+            <div class="duration-box" style="margin-top:10px; background:#e3f2fd; border:1px solid #90caf9;">
+                <span class="duration-label">Manager</span>
+                <span class="duration-value">{{ user.userprofile.manager.username }}</span>
+            </div>
+            {% endif %}
+
+            <button type="submit">Submit Leave Request</button>
+        </form>
     </div>
 
-    <div class="card">
-        <h3>My Leaves</h3>
-        <p>View your applied leaves</p>
-        <a href="{% url 'my_leaves' %}">My Leaves</a>
-    </div>
+    <!-- Entitlements Cards -->
+    <div class="entitlements">
+        {% for e in entitlements %}
+        <div class="entitlement-card">
+            <div class="entitlement-header">
+                <h4>{{ e.type }}</h4>
+                {% if e.remaining <= 0 %}
+                    <span class="badge danger">No Balance</span>
+                {% elif e.remaining <= 2 %}
+                    <span class="badge warning">Low</span>
+                {% else %}
+                    <span class="badge success">Available</span>
+                {% endif %}
+            </div>
 
-    <div class="card">
-        <h3>Leave Calendar</h3>
-        <p>Check upcoming leaves</p>
-        <a href="{% url 'leave_calendar' %}">Leave Calendar</a>
-    </div>
-</div>
+            <div class="entitlement-stats">
+                <div class="stat">
+                    <div class="label">Total</div>
+                    <div class="value">{{ e.total }} days</div>
+                </div>
+                <div class="stat">
+                    <div class="label">Used</div>
+                    <div class="value">{{ e.applied }} days</div>
+                </div>
+                <div class="stat highlight">
+                    <div class="label">Remaining</div>
+                    <div class="value">{{ e.remaining }} days</div>
+                </div>
+            </div>
 
-<!-- Apply Leave Form -->
-<div class="form-container" id="apply-leave">
-    <h3>Apply for Leave</h3>
-
-    <form method="POST" action="{% url 'leave_request' %}">
-        {% csrf_token %}
-
-        <label>Leave Type</label>
-        <select name="leave_type" required>
-            <option value="">Select Leave Type</option>
-            <option value="Vacation">Vacation</option>
-            <option value="Sick Leave">Sick Leave</option>
-            <option value="Work From Home">Work From Home</option>
-        </select>
-
-        <label>Start Date</label>
-        <input type="date" name="start_date" id="start_date" required>
-
-        <label>End Date</label>
-        <input type="date" name="end_date" id="end_date" required>
-
-        <!-- Duration Display -->
-        <div class="duration-box">
-            <span class="duration-label">Leave Duration (Excl. Sundays)</span>
-            <span class="duration-value">
-                <span id="duration">0</span> day(s)
-            </span>
+            <div class="progress-bar">
+                <div class="progress" data-width="{{ e.used_percent }}"></div>
+            </div>
         </div>
+        {% empty %}
+        <p>No entitlements found.</p>
+        {% endfor %}
+    </div>
 
-        <label>Reason</label>
-        <textarea name="reason" rows="4" placeholder="Enter reason for leave" required></textarea>
-        <label>Reason</label>
-        <textarea name="reason" rows="4" placeholder="Enter reason for leave" required></textarea>
-
-        {% if user.userprofile.manager %}
-        <div class="duration-box" style="margin-top:10px; background:#e3f2fd; border:1px solid #90caf9;">
-            <span class="duration-label">Manager</span>
-            <span class="duration-value">{{ user.userprofile.manager.username }}</span>
-        </div>
-        {% endif %}
-
-        <button type="submit">Submit Leave Request</button>
-
-        
-    </form>
 </div>
 
 {% endblock %}
@@ -119,46 +238,38 @@ function calculateDuration() {
         durationSpan.textContent = 0;
         return;
     }
-
     const startDate = new Date(startDateInput.value);
     const endDate = new Date(endDateInput.value);
-
-    // ❌ Invalid case: end < start
     if (endDate < startDate) {
         durationSpan.textContent = 0;
         return;
     }
-
     let count = 0;
     let current = new Date(startDate);
-
     while (current <= endDate) {
-        // Exclude Sundays
-        if (current.getDay() !== 0) {
-            count++;
-        }
+        if (current.getDay() !== 0) count++;
         current.setDate(current.getDate() + 1);
     }
-
     durationSpan.textContent = count;
 }
 
-// ✅ When start date changes
 startDateInput.addEventListener("change", () => {
-    // Force end date to be >= start date
     endDateInput.min = startDateInput.value;
-
-    // If already selected end date is invalid → reset it
     if (endDateInput.value && endDateInput.value < startDateInput.value) {
         endDateInput.value = "";
         durationSpan.textContent = 0;
     }
-
     calculateDuration();
 });
 
-// ✅ When end date changes
 endDateInput.addEventListener("change", calculateDuration);
-</script>
 
+// Animate entitlement progress bars
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".progress").forEach(bar => {
+        const width = bar.dataset.width || 0;
+        bar.style.width = width + "%";
+    });
+});
+</script>
 {% endblock %}

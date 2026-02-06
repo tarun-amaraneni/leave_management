@@ -24,15 +24,22 @@
         border: 1px solid #d1d5db;
         font-size: 14px;
     }
-    .filters input { flex: 1; min-width: 200px; }
+    .filters input { flex: 1; min-width: 150px; }
     .filters button {
-        background: #2563eb;
-        color: white;
-        border: none;
         cursor: pointer;
         font-weight: 500;
+        border: none;
     }
-    .filters button:hover { background: #1e40af; }
+    .filters .apply-btn {
+        background: #2563eb;
+        color: white;
+    }
+    .filters .apply-btn:hover { background: #1e40af; }
+    .filters .clear-btn {
+        background: #e5e7eb;
+        color: #111827;
+    }
+    .filters .clear-btn:hover { background: #d1d5db; }
 
     /* Summary Cards */
     .summary-cards {
@@ -90,25 +97,25 @@
     <a href="{% url 'manager_dashboard' %}" class="back">← Back to Dashboard</a>
 
     <!-- 🔍 Search & Filters -->
-    <form method="get" class="filters">
+    <div class="filters">
         <input type="text" name="search" placeholder="Search employee..." value="{{ request.GET.search }}">
-
         <select name="status">
             <option value="">All Status</option>
             {% for key, label in status_choices %}
                 <option value="{{ key }}" {% if request.GET.status == key %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
-
         <select name="leave_type">
             <option value="">All Leave Types</option>
             {% for key, label in leave_type_choices %}
                 <option value="{{ key }}" {% if request.GET.leave_type == key %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
-
-        <button type="submit">Filter</button>
-    </form>
+        <input type="date" name="from_date" value="{{ request.GET.from_date }}">
+        <input type="date" name="to_date" value="{{ request.GET.to_date }}">
+        <!-- Clear Filters -->
+        <button type="button" class="clear-btn" id="clear-filters">Clear Filters</button>
+    </div>
 
     <!-- 📊 Summary Cards -->
     <div class="summary-cards">
@@ -146,9 +153,7 @@
                 <td>{{ leave.leave_type }}</td>
                 <td>{{ leave.start_date }}</td>
                 <td>{{ leave.end_date }}</td>
-                <td>
-                    <span class="badge {{ leave.status }}">{{ leave.status }}</span>
-                </td>
+                <td><span class="badge {{ leave.status }}">{{ leave.status }}</span></td>
                 <td>{{ leave.reason }}</td>
                 <td class="actions">
                     {% if leave.status == 'PENDING' %}
@@ -169,4 +174,83 @@
         </tbody>
     </table>
 </div>
+
+<!-- 🔥 Frontend Filtering Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[name="search"]');
+    const statusSelect = document.querySelector('select[name="status"]');
+    const typeSelect = document.querySelector('select[name="leave_type"]');
+    const fromInput = document.querySelector('input[name="from_date"]');
+    const toInput = document.querySelector('input[name="to_date"]');
+    const table = document.querySelector('table tbody');
+    const rows = Array.from(table.querySelectorAll('tr'));
+    const clearBtn = document.getElementById('clear-filters');
+
+    function filterTable() {
+        const search = searchInput.value.toLowerCase();
+        const status = statusSelect.value;
+        const leaveType = typeSelect.value;
+        const fromDate = fromInput.value ? new Date(fromInput.value) : null;
+        const toDate = toInput.value ? new Date(toInput.value) : null;
+
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+
+            // Skip "No leave requests" row
+            if(cells.length < 2) return;
+
+            const employee = cells[0].innerText.toLowerCase();
+            const type = cells[1].innerText;
+            const start = new Date(cells[2].innerText);
+            const end = new Date(cells[3].innerText);
+            const rowStatus = cells[4].innerText;
+
+            let show = true;
+
+            if (search && !employee.includes(search)) show = false;
+            if (status && rowStatus !== status) show = false;
+            if (leaveType && type !== leaveType) show = false;
+            if (fromDate && end < fromDate) show = false;
+            if (toDate && start > toDate) show = false;
+
+            row.style.display = show ? '' : 'none';
+        });
+
+        // Handle "No leave requests" message
+        const visibleRows = rows.filter(r => r.style.display !== 'none' && r.querySelectorAll('td').length > 1);
+        const noRow = table.querySelector('.no-data-row');
+        if (visibleRows.length === 0) {
+            if(!noRow) {
+                const tr = document.createElement('tr');
+                tr.classList.add('no-data-row');
+                tr.innerHTML = `<td colspan="7" style="text-align:center; padding:20px;">No leave requests found</td>`;
+                table.appendChild(tr);
+            }
+        } else {
+            if(noRow) noRow.remove();
+        }
+    }
+
+    // Attach listeners for real-time filtering
+    [searchInput, statusSelect, typeSelect, fromInput, toInput].forEach(el => {
+        el.addEventListener('input', filterTable);
+        el.addEventListener('change', filterTable);
+    });
+
+    // Clear filters functionality
+    clearBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        statusSelect.value = '';
+        typeSelect.value = '';
+        fromInput.value = '';
+        toInput.value = '';
+        filterTable();
+    });
+
+    // Initial filter on page load
+    filterTable();
+});
+</script>
+
 {% endblock %}

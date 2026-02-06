@@ -20,7 +20,7 @@ urlpatterns = [
     path('manager/dashboard/', views.manager_dashboard, name='manager_dashboard'),
     path('manager/leaves/', views.manager_leave_list, name='manager_leave_list'),
     path('manager/leave/<int:leave_id>/<str:action>/', views.leave_action, name='leave_action'),
-     
+    path('view-members/', views.view_members, name='view_members'),
 
     
 ]
