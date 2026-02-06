@@ -51,3 +51,34 @@ class LeaveRequest(models.Model):
 
     def __str__(self):
         return f"{self.employee.username} - {self.leave_type} ({self.status})"
+
+
+
+
+
+
+from django.db import models
+
+class Holiday(models.Model):
+    HOLIDAY_CHOICES = (
+        ('Y', 'Holiday'),
+        ('N', 'Non-Holiday'),
+    )
+
+    holiday_date = models.DateField(primary_key=True)  # Primary key
+    holiday_day = models.CharField(max_length=10)      # Day of the week, e.g., Monday
+    holiday_indicator = models.CharField(
+        max_length=1,
+        choices=HOLIDAY_CHOICES,
+        default='N'
+    )
+    holiday_reason = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        db_table = 'holiday'
+        verbose_name = 'Holiday'
+        verbose_name_plural = 'Holidays'
+        ordering = ['holiday_date']
+
+    def __str__(self):
+        return f"{self.holiday_date} - {self.holiday_reason or 'No Reason'}"

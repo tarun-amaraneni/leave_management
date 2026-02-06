@@ -28,16 +28,113 @@ def login_view(request):
 
 from django.contrib.auth.decorators import login_required
 
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.views.decorators.cache import never_cache
+from collections import defaultdict
+from datetime import timedelta
+from .models import LeaveRequest
+
+TOTAL_ENTITLEMENT = 12
+
+def calculate_leave_days(start_date, end_date):
+    """Count leave days excluding Sundays"""
+    days = 0
+    current = start_date
+    while current <= end_date:
+        if current.weekday() != 6:  # Sunday = 6
+            days += 1
+        current += timedelta(days=1)
+    return days
+
 @never_cache
 @login_required
 def employee_dashboard(request):
-    return render(request, 'employee/dashboard.html')
+    user = request.user
+
+    # --- ENTITLEMENTS LOGIC (reuse your existing function) ---
+    approved_leaves = LeaveRequest.objects.filter(
+        employee=user,
+        status='APPROVED'
+    )
+
+    leave_days_map = defaultdict(int)
+    for leave in approved_leaves:
+        days = calculate_leave_days(leave.start_date, leave.end_date)
+        leave_days_map[leave.leave_type] += days
+
+    entitlements = []
+    for leave_type, label in LeaveRequest.LEAVE_TYPE_CHOICES:
+        applied_days = leave_days_map.get(leave_type, 0)
+        remaining = max(TOTAL_ENTITLEMENT - applied_days, 0)
+        used_percent = int((applied_days / TOTAL_ENTITLEMENT) * 100) if TOTAL_ENTITLEMENT else 0
+
+        entitlements.append({
+            'type': label,
+            'total': TOTAL_ENTITLEMENT,
+            'applied': applied_days,
+            'remaining': remaining,
+            'used_percent': used_percent
+        })
+
+    # Pass entitlements to dashboard template
+    return render(request, 'employee/dashboard.html', {
+        'entitlements': entitlements
+    })
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.views.decorators.cache import never_cache
+from collections import defaultdict
+from datetime import timedelta
+from .models import LeaveRequest
+
+TOTAL_ENTITLEMENT = 12
+
+def calculate_leave_days(start_date, end_date):
+    """Count leave days excluding Sundays"""
+    days = 0
+    current = start_date
+    while current <= end_date:
+        if current.weekday() != 6:  # Sunday = 6
+            days += 1
+        current += timedelta(days=1)
+    return days
 
 @never_cache
 @login_required
 def manager_dashboard(request):
-    return render(request, 'manager/dashboard.html')
+    user = request.user
 
+    # --- ENTITLEMENTS LOGIC (reuse your existing function) ---
+    approved_leaves = LeaveRequest.objects.filter(
+        employee=user,
+        status='APPROVED'
+    )
+
+    leave_days_map = defaultdict(int)
+    for leave in approved_leaves:
+        days = calculate_leave_days(leave.start_date, leave.end_date)
+        leave_days_map[leave.leave_type] += days
+
+    entitlements = []
+    for leave_type, label in LeaveRequest.LEAVE_TYPE_CHOICES:
+        applied_days = leave_days_map.get(leave_type, 0)
+        remaining = max(TOTAL_ENTITLEMENT - applied_days, 0)
+        used_percent = int((applied_days / TOTAL_ENTITLEMENT) * 100) if TOTAL_ENTITLEMENT else 0
+
+        entitlements.append({
+            'type': label,
+            'total': TOTAL_ENTITLEMENT,
+            'applied': applied_days,
+            'remaining': remaining,
+            'used_percent': used_percent
+        })
+
+    # Pass entitlements to dashboard template
+    return render(request, 'manager/dashboard.html', {
+        'entitlements': entitlements
+    })
 
 
 # view for Apply Leave
@@ -405,3 +502,18 @@ def leave_action(request, leave_id, action):
 
 
 # manager
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from .models import UserProfile
+
+@login_required
+def view_members(request):
+    current_user = request.user
+
+    # Fetch employees under this manager
+    members = UserProfile.objects.filter(manager=current_user)
+
+    context = {
+        'members': members
+    }
+    return render(request, 'manager/view_members.html', context)

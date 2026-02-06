@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}My Team{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-title {
+    margin-bottom: 25px;
+    color: #1f2a38;
+    font-weight: 700;
+}
+
+.member-list {
+    list-style: none;
+    padding: 0;
+}
+
+.member-list li {
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+    font-weight: 500;
+    color: #1f2a38;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 class="page-title">My Team Members</h2>
+
+<ul class="member-list">
+    {% for member in members %}
+        <li>{{ member.user.get_full_name|default:member.user.username }}</li>
+    {% empty %}
+        <li>No employees assigned to you.</li>
+    {% endfor %}
+</ul>
+{% endblock %}
